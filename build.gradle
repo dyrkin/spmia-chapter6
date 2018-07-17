@@ -1,0 +1,68 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+apply from: "docker.gradle"
+
+allprojects {
+    group = 'com.thoughtmechanix'
+    version = '0.0.1-SNAPSHOT'
+}
+
+buildscript {
+    ext {
+        springBootVersion = '2.0.3.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath('com.bmuschko:gradle-docker-plugin:3.2.5')
+    }
+}
+
+subprojects {
+    ext {
+        springCloudVersion = "Finchley.RELEASE"
+        chapter = "chapter6"
+    }
+
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url 'https://repo.spring.io/libs-milestone' }
+    }
+
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.bmuschko.docker-java-application'
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+
+    task replaceTokens(type: Copy) {
+        def finalBuildName = project.name + '-' + project.version
+
+        from 'src/main/docker'
+        into 'build/docker'
+        filter(ReplaceTokens, tokens: ['project.build.finalName': finalBuildName])
+    }
+
+    task copyJar(type: Copy) {
+        dependsOn assemble
+        from file("${project.buildDir}/libs")
+        into file("${project.buildDir}/docker")
+    }
+
+    docker {
+        url = dockerHost()
+        certPath = dockerCertPath()
+    }
+}
+
+
+

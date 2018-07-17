@@ -1,0 +1,33 @@
+def dockerMachineEnv = {
+    try {
+        return "docker-machine env".execute().text.trim().
+                split("\\r\\n|\\r|\\n").findAll { it.startsWith("export") }.
+                collect { it.replaceFirst("export\\s*", "") }.collectEntries {
+            def kv = it.split("=");
+            [kv[0], kv[1].replaceAll("\"", "")]
+        }
+    } catch (Exception e) {
+        e.printStackTrace()
+        return new HashMap<String, String>()
+    }
+}
+
+def dockerEnv = dockerMachineEnv()
+
+ext {
+    dockerHost = {
+        if (System.getenv()['DOCKER_HOST']) {
+            return System.getenv()['DOCKER_HOST'].replace("tcp", "https")
+        } else if (dockerEnv['DOCKER_HOST']) {
+            return dockerEnv['DOCKER_HOST'].replace("tcp", "https")
+        } else throw new RuntimeException("Please specify DOCKER_HOST env variable or run docker machine")
+    }
+
+    dockerCertPath = {
+        if (System.getenv()['DOCKER_CERT_PATH']) {
+            return file(System.getenv()['DOCKER_CERT_PATH'])
+        } else if(dockerEnv['DOCKER_CERT_PATH']) {
+            return file(dockerEnv['DOCKER_CERT_PATH'])
+        } else throw new RuntimeException("Please specify DOCKER_CERT_PATH env variable or run docker machine")
+    }
+}

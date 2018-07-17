@@ -1,0 +1,11 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+dependencies {
+    compile('org.springframework.cloud:spring-cloud-starter-netflix-eureka-server')
+    compile('org.springframework.cloud:spring-cloud-context')
+}
+
+task buildImage(type: DockerBuildImage, dependsOn: [replaceTokens, copyJar]) {
+    inputDir = new File("${project.buildDir}/docker")
+    tag = "johncarnell/tmx-eurekasvr:${chapter}"
+}
